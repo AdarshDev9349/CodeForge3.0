@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { IconMail, IconLock, IconUser, IconArrowRight, IconArrowLeft, IconCheck, IconAlertCircle, IconUsers, IconSchool, IconHash } from '@tabler/icons-react';
+import { IconMail, IconLock, IconUser, IconArrowRight, IconArrowLeft, IconAlertCircle, IconUsers, IconSchool, IconHash } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -22,34 +22,37 @@ export default function LoginPage() {
   const [currentMemberData, setCurrentMemberData] = useState({ name: '', email: '', yearOfStudy: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    try {
-      // Check if user exists in teams table
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('leader_email', email)
-        .single();
+    // Check if user exists in teams table
+    const { data: teamData, error: teamError } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('leader_email', email)
+      .single();
 
-      if (teamData) {
-        // User exists, show login form
-        setStep('login');
-      } else {
+    if (teamError) {
+      // Check if it's a "not found" error (PGRST116)
+      if (teamError.code === 'PGRST116' || teamError.message.includes('multiple (or no) rows')) {
         // User doesn't exist, show registration form
         setStep('register');
+      } else {
+        // Network error, database error, or other issue - show error message
+        setError('Unable to verify email. Please check your connection and try again.');
       }
-    } catch (err) {
-      // If no data found or error, show register form
+    } else if (teamData) {
+      // User exists, show login form
+      setStep('login');
+    } else {
+      // No data and no error (shouldn't happen, but handle it)
       setStep('register');
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
   const handleLogin = async (e) => {
@@ -78,14 +81,12 @@ export default function LoginPage() {
         teamId: teamData.team_id,
         teamName: teamData.team_name,
         leaderEmail: teamData.leader_email,
+        totalMembers: teamData.total_members,
       };
       localStorage.setItem('teamSession', JSON.stringify(sessionData));
       window.dispatchEvent(new Event('sessionUpdate'));
 
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/');
-      }, 1500);
+      router.push('/');
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {
@@ -137,6 +138,23 @@ export default function LoginPage() {
   const completeRegistration = async (members = additionalMembers) => {
     setLoading(true);
     try {
+      // Double-check that email doesn't already exist (prevents race conditions)
+      const { data: existingTeam, error: checkError } = await supabase
+        .from('teams')
+        .select('team_id')
+        .eq('leader_email', email)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116' && !checkError.message.includes('multiple (or no) rows')) {
+        // A real error occurred (not just "not found")
+        throw new Error('Unable to verify email availability. Please try again.');
+      }
+
+      if (existingTeam) {
+        // Email already exists
+        throw new Error('This email is already registered. Please use the login option.');
+      }
+
       // Generate a unique team ID
       const teamId = crypto.randomUUID();
       
@@ -177,14 +195,12 @@ export default function LoginPage() {
         teamId: teamId,
         teamName: teamName,
         leaderEmail: email,
+        totalMembers: parseInt(teamMembers),
       };
       localStorage.setItem('teamSession', JSON.stringify(sessionData));
       window.dispatchEvent(new Event('sessionUpdate'));
 
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/');
-      }, 1500);
+      router.push('/');
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -289,18 +305,6 @@ export default function LoginPage() {
               {step === 'email' ? 'Enter your email to continue' : step === 'login' ? 'Enter your password to login' : step === 'team-members' ? `Team Member ${currentMemberIndex + 1} of ${parseInt(teamMembers) - 1}` : 'Complete your registration'}
             </p>
           </motion.div>
-
-          {/* Success Message */}
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 bg-green-500/20 border border-green-500/40 rounded-xl flex items-center gap-3"
-            >
-              <IconCheck className="w-5 h-5 text-green-400" />
-              <span className="text-green-300">Success! Redirecting...</span>
-            </motion.div>
-          )}
 
           {/* Error Message */}
           {error && (

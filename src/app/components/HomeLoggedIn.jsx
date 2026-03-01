@@ -5,6 +5,17 @@ import { motion } from 'framer-motion';
 export default function HomeLoggedIn({ session }) {
   return (
     <div className="relative w-full min-h-screen flex flex-col items-center justify-center px-4 md:px-6 text-white pt-24 md:pt-28 pb-12 md:pb-16">
+      {/* Logged In Badge - Top Left */}
+      <motion.div
+        className="fixed top-10 left-4 md:left-8 z-20 inline-flex items-center gap-2 bg-purple-900/30 backdrop-blur-sm border border-purple-500/30 rounded-full px-4 py-2"
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+        <p className="uppercase text-xs tracking-widest text-purple-200">Logged In</p>
+      </motion.div>
+
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-32 h-32 border border-purple-500/30 rounded-full animate-pulse" />
@@ -20,17 +31,7 @@ export default function HomeLoggedIn({ session }) {
         transition={{ duration: 0.6 }}
       >
         {/* Welcome Header */}
-        <div className="text-center mb-12">
-          <motion.div
-            className="inline-flex items-center gap-2 bg-purple-900/30 backdrop-blur-sm border border-purple-500/30 rounded-full px-4 py-2 mb-6"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <p className="uppercase text-xs tracking-widest text-purple-200">Logged In</p>
-          </motion.div>
-
+        <div className="text-center mb-12 mt-8 md:mt-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
             Welcome, <span className="text-purple-400">{session.teamName}</span>
           </h1>
@@ -55,7 +56,7 @@ export default function HomeLoggedIn({ session }) {
               <h3 className="text-lg font-semibold text-white">Team Info</h3>
             </div>
             <p className="text-purple-200 text-sm">Team Name: {session.teamName}</p>
-            <p className="text-purple-200 text-sm mt-2">Members: {session.totalMembers || session.members?.length || 1}</p>
+            <p className="text-purple-200 text-sm mt-2">Members: {session.totalMembers}</p>
           </motion.div>
 
           {/* Event Status Card */}

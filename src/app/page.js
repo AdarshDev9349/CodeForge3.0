@@ -22,13 +22,19 @@ export default function UHackathonLanding() {
           // Validate session against database
           const { data: teamData, error } = await supabase
             .from('teams')
-            .select('team_id, team_name, leader_email')
+            .select('team_id, team_name, leader_email, total_members')
             .eq('leader_email', parsedSession.leaderEmail)
             .single();
           
           if (teamData && !error) {
-            // Team still exists in database
-            setSession(parsedSession);
+            // Team still exists in database - update session with latest data
+            const updatedSession = {
+              teamId: teamData.team_id,
+              teamName: teamData.team_name,
+              leaderEmail: teamData.leader_email,
+              totalMembers: teamData.total_members
+            };
+            setSession(updatedSession);
           } else {
             // Team deleted from database, clear session
             localStorage.removeItem('teamSession');

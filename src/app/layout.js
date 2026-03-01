@@ -1,10 +1,11 @@
-
+'use client';
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Silk from "../ui/background";
 import LoadingWrapper from "../ui/LoadingWrapper";
 import FloatingDockDemo from "../ui/floating-demo";
+import { usePathname } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,19 +17,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
-  title: "CodeForge3.0",
-  description: "Hackathon by IEEE SB UCEK",
-};
-
 export default function RootLayout({ children }) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin');
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Silk />
-        <FloatingDockDemo />
+        {!isAdminRoute && <Silk />}
+        {!isAdminRoute && <FloatingDockDemo />}
         <LoadingWrapper>
           
           {children}
